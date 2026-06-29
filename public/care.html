@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Care Portal — Billing Investigation Platform</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F3F4F8; --white: #fff; --border: #E5E7EB;
+  --blue: #2563EB; --blue-l: #EFF6FF;
+  --green: #16A34A; --green-l: #F0FDF4;
+  --amber: #D97706; --amber-l: #FFFBEB;
+  --red: #DC2626; --red-l: #FEF2F2;
+  --purple: #7C3AED; --purple-l: #F5F3FF;
+  --teal: #0E7490; --teal-l: #ECFEFF;
+  --t1: #111827; --t2: #4B5563; --t3: #9CA3AF;
+  --font: -apple-system, BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+body { font-family: var(--font); background: var(--bg); color: var(--t1); min-height: 100vh; }
+
+/* topbar */
+.topbar {
+  background: var(--white); border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 56px;
+  display: flex; align-items: center; gap: 16px;
+  position: sticky; top: 0; z-index: 50;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+.logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg,#2563EB,#7C3AED); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; }
+.nav-link { font-size: 13px; color: var(--t2); text-decoration: none; padding: 6px 12px; border-radius: 6px; transition: background .1s; }
+.nav-link:hover, .nav-link.active { background: var(--blue-l); color: var(--blue); }
+.topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.btn { padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--white); color: var(--t1); transition: background .1s; }
+.btn:hover { background: var(--bg); }
+.btn-primary { background: var(--blue); color: #fff; border-color: transparent; }
+.btn-primary:hover { opacity: .9; }
+.selfcare-link { background: var(--purple); color: #fff; border-color: transparent; text-decoration: none; padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; }
+
+/* layout */
+.layout { display: flex; height: calc(100vh - 56px); }
+.sidebar { width: 200px; background: var(--white); border-right: 1px solid var(--border); padding: 16px 10px; flex-shrink: 0; overflow-y: auto; }
+.main { flex: 1; overflow-y: auto; padding: 24px; }
+
+.side-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--t3); padding: 0 8px 6px; }
+.side-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 7px; font-size: 13px; color: var(--t2); cursor: pointer; transition: background .1s; margin-bottom: 2px; }
+.side-item:hover, .side-item.active { background: var(--blue-l); color: var(--blue); font-weight: 500; }
+.side-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 24px; }
+.stat { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.stat-label { font-size: 12px; color: var(--t3); margin-bottom: 6px; }
+.stat-val { font-size: 26px; font-weight: 700; }
+.stat-sub { font-size: 11px; color: var(--t3); margin-top: 2px; }
+
+/* section */
+.section { display: none; }
+.section.active { display: block; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.section-title { font-size: 17px; font-weight: 700; }
+.section-sub { font-size: 12px; color: var(--t3); margin-top: 2px; }
+
+/* table */
+.tbl-wrap { background: var(--white); border: 1px solid var(--border); border-radius: 10px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--bg); padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--t1); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #FAFBFF; }
+.mono { font-family: monospace; font-size: 12px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.b-green  { background: var(--green-l);  color: var(--green); }
+.b-blue   { background: var(--blue-l);   color: var(--blue); }
+.b-amber  { background: var(--amber-l);  color: var(--amber); }
+.b-red    { background: var(--red-l);    color: var(--red); }
+.b-purple { background: var(--purple-l); color: var(--purple); }
+.b-teal   { background: var(--teal-l);   color: var(--teal); }
+.empty { text-align: center; padding: 32px; color: var(--t3); font-size: 13px; }
+.loading { text-align: center; padding: 32px; color: var(--t3); }
+
+/* complaint detail */
+.inv-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+.inv-card-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.inv-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+.inv-row span:first-child { color: var(--t3); }
+
+/* toast */
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--t1); color: #fff; padding: 12px 18px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .3s; z-index: 100; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><div class="logo-icon">⚡</div>Care Portal</div>
+  <a href="#" class="nav-link active" onclick="switchSite('care')">Care Dashboard</a>
+  <div class="topbar-right">
+    <button class="btn" onclick="seedDB()">🌱 Seed Test Data</button>
+    <button class="btn btn-primary" onclick="refreshAll()">↻ Refresh</button>
+    <a href="/selfcare" class="selfcare-link">→ Selfcare Agent</a>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="side-label">Overview</div>
+    <div class="side-item active" onclick="show('dashboard', this)"><div class="side-dot" style="background:#2563EB"></div>Dashboard</div>
+    <div class="side-label" style="margin-top:12px">Data Tables</div>
+    <div class="side-item" onclick="show('customers', this)"><div class="side-dot" style="background:#2563EB"></div>Customers</div>
+    <div class="side-item" onclick="show('invoices', this)"><div class="side-dot" style="background:#0E7490"></div>Invoices</div>
+    <div class="side-item" onclick="show('charges', this)"><div class="side-dot" style="background:#D97706"></div>Charges</div>
+    <div class="side-item" onclick="show('products', this)"><div class="side-dot" style="background:#16A34A"></div>Products</div>
+    <div class="side-item" onclick="show('subscriptions', this)"><div class="side-dot" style="background:#16A34A"></div>Subscriptions</div>
+    <div class="side-item" onclick="show('usage', this)"><div class="side-dot" style="background:#7C3AED"></div>Usage Records</div>
+    <div class="side-item" onclick="show('complaints', this)"><div class="side-dot" style="background:#D97706"></div>Complaints</div>
+    <div class="side-item" onclick="show('investigations', this)"><div class="side-dot" style="background:#DC2626"></div>AI Investigations</div>
+  </div>
+
+  <div class="main">
+
+    <!-- Dashboard -->
+    <div id="section-dashboard" class="section active">
+      <div class="section-header">
+        <div><div class="section-title">Dashboard</div><div class="section-sub">AI Billing Investigation Platform — TMF630 / TMF666 aligned</div></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Customers</div><div class="stat-val" id="s-customers">—</div><div class="stat-sub">registered accounts</div></div>
+        <div class="stat"><div class="stat-label">Open Complaints</div><div class="stat-val" id="s-complaints">—</div><div class="stat-sub">pending investigation</div></div>
+        <div class="stat"><div class="stat-label">Invoices</div><div class="stat-val" id="s-invoices">—</div><div class="stat-sub">billing cycles</div></div>
+        <div class="stat"><div class="stat-label">AI Investigations</div><div class="stat-val" id="s-investigations">—</div><div class="stat-sub">cases analysed</div></div>
+      </div>
+      <div class="tbl-wrap">
+        <table><thead><tr><th>Customer</th><th>Plan</th><th>Latest complaint</th><th>Status</th></tr></thead>
+        <tbody id="dash-complaints"><tr><td colspan="4" class="loading">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- Customers -->
+    <div id="section-customers" class="section">
+      <div class="section-header"><div><div class="section-title">Customers</div><div class="section-sub">TMF632 Party Management</div></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Email</th><th>Type</th><th>Plan</th><th>Registered</th></tr></thead>
+        <tbody id="tbl-customers"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Invoices -->
+    <div id="section-invoices" class="section">
+      <div class="section-header"><div><div class="section-title">Billing Invoices</div><div class="section-sub">TMF666 — all invoice fields</div></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Invoice ID</th><th>Customer</th><th>Month</th><th>Total</th><th>Tax</th><th>Discount</th><th>Net Payable</th><th>Due Date</th><th>Status</th></tr></thead>
+        <tbody id="tbl-invoices"><tr><td colspan="9" class="loading">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Charges -->
+    <div id="section-charges" class="section">
+      <div class="section-header"><div><div class="section-title">Charges</div><div class="section-sub">All invoice line items</div></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Charge ID</th><th>Invoice</th><th>Customer</th><th>Type</th><th>Description</th><th>Amount</th><th>Tax %</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody id="tbl-charges"><tr><td colspan="9" class="loading">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Products -->
+    <div id="section-products" class="section">
+      <div class="section-header"><div><div class="section-title">Products</div><div class="section-sub">TMF620 — Package catalog</div></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Product ID</th><th>Package Name</th><th>Type</th><th>Base Price</th><th>Currency</th><th>Cycle</th><th>Status</th><th>Features</th></tr></thead>
+        <tbody id="tbl-products"><tr><td colspan="8" class="loading">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Subscriptions -->
+    <div id="section-subscriptions" class="section">
+      <div class="section-header"><div><div class="section-title">Customer Subscriptions</div><div class="section-sub">Products bought by each customer</div></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Customer</th><th>Package</th><th>Start Date</th><th>Agreed Price</th><th>Status</th></tr></thead>
+        <tbody id="tbl-subscriptions"><tr><td colspan="5" class="loading">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Usage -->
+    <div id="section-usage" class="section">
+      <div class="section-header"><div><div class="section-title">Usage Records</div><div class="section-sub">TMF635 — Voice / Data / SMS events</div></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Usage ID</th><th>Customer</th><th>Type</th><th>Amount</th><th>Unit</th><th>Roaming</th><th>Date</th></tr></thead>
+        <tbody id="tbl-usage"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- Complaints -->
+    <div id="section-complaints" class="section">
+      <div class="section-header"><div><div class="section-title">Complaints</div><div class="section-sub">TMF632 — Trouble Tickets</div></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Complaint ID</th><th>Customer</th><th>Type</th><th>Description</th><th>Date</th><th>Channel</th><th>Status</th></tr></thead>
+        <tbody id="tbl-complaints"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+    <!-- AI Investigations -->
+    <div id="section-investigations" class="section">
+      <div class="section-header"><div><div class="section-title">AI Investigations</div><div class="section-sub">Claude-generated root cause analysis</div></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>ID</th><th>Complaint</th><th>Customer</th><th>Root Cause</th><th>Recommendation</th><th>Confidence</th><th>Model</th></tr></thead>
+        <tbody id="tbl-investigations"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
+      </table></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';  // same origin
+
+function show(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.side-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  loadSection(name);
+}
+
+function badge(val, map) {
+  const cls = map[val] || 'b-blue';
+  return `<span class="badge ${cls}">${val || '—'}</span>`;
+}
+function fmt(v) { return v != null ? `$${Number(v).toFixed(2)}` : '—'; }
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString() : '—'; }
+function mono(s) { return `<span class="mono">${s || '—'}</span>`; }
+function trunc(s, n=60) { return s && s.length > n ? s.slice(0,n)+'…' : (s||'—'); }
+
+async function apiFetch(path) {
+  const r = await fetch(API + path);
+  if (!r.ok) throw new Error('fetch failed');
+  return r.json();
+}
+
+async function loadSection(name) {
+  try {
+    if (name === 'dashboard') {
+      const [stats, complaints] = await Promise.all([apiFetch('/api/stats'), apiFetch('/api/complaints')]);
+      document.getElementById('s-customers').textContent      = stats.customers;
+      document.getElementById('s-complaints').textContent     = stats.complaints;
+      document.getElementById('s-invoices').textContent       = stats.invoices;
+      document.getElementById('s-investigations').textContent = stats.investigations;
+      const custMap = {}; (await apiFetch('/api/customers')).forEach(c => custMap[c.customerId] = c);
+      document.getElementById('dash-complaints').innerHTML = complaints.slice(0,10).map(c => `<tr>
+        <td><strong>${custMap[c.customerId]?.firstName || ''} ${custMap[c.customerId]?.lastName || ''}</strong><br><span style="font-size:11px;color:var(--t3)">${c.customerId}</span></td>
+        <td>${custMap[c.customerId]?.planName || '—'}</td>
+        <td style="max-width:260px">${trunc(c.description,80)}</td>
+        <td>${badge(c.status,{'Open':'b-amber','Under Investigation':'b-blue','Closed':'b-green'})}</td>
+      </tr>`).join('') || '<tr><td colspan="4" class="empty">No complaints yet</td></tr>';
+    }
+
+    if (name === 'customers') {
+      const data = await apiFetch('/api/customers');
+      document.getElementById('tbl-customers').innerHTML = data.map(c => `<tr>
+        <td>${mono(c.customerId)}</td>
+        <td><strong>${c.firstName} ${c.lastName}</strong></td>
+        <td>${c.phoneNumber||'—'}</td><td>${c.email||'—'}</td>
+        <td>${badge(c.accountType,{'Postpaid':'b-blue','Prepaid':'b-green'})}</td>
+        <td>${c.planName||'—'}</td><td>${fmtDate(c.registrationDate)}</td>
+      </tr>`).join('') || '<tr><td colspan="7" class="empty">No data</td></tr>';
+    }
+
+    if (name === 'invoices') {
+      const data = await apiFetch('/api/invoices');
+      document.getElementById('tbl-invoices').innerHTML = data.map(i => `<tr>
+        <td>${mono(i.invoiceId)}</td><td>${mono(i.customerId)}</td>
+        <td>${i.billingMonth||'—'}</td><td>${fmt(i.totalAmount)}</td><td>${fmt(i.taxAmount)}</td>
+        <td>${fmt(i.discountAmount)}</td><td><strong>${fmt(i.netPayable)}</strong></td>
+        <td>${fmtDate(i.dueDate)}</td>
+        <td>${badge(i.paymentStatus,{'Paid':'b-green','Pending':'b-amber','Overdue':'b-red'})}</td>
+      </tr>`).join('') || '<tr><td colspan="9" class="empty">No data</td></tr>';
+    }
+
+    if (name === 'charges') {
+      const data = await apiFetch('/api/charges');
+      document.getElementById('tbl-charges').innerHTML = data.map(c => `<tr>
+        <td>${mono(c.chargeId)}</td><td>${mono(c.invoiceId)}</td><td>${mono(c.customerId)}</td>
+        <td>${badge(c.chargeType,{subscription:'b-blue',roaming:'b-red',data_overage:'b-amber',plan_change_fee:'b-purple',addon:'b-teal'})}</td>
+        <td>${trunc(c.description,50)}</td><td><strong>${fmt(c.amount)}</strong></td>
+        <td>${c.taxRate ? (c.taxRate*100).toFixed(0)+'%' : '—'}</td>
+        <td>${fmtDate(c.chargeDate)}</td>
+        <td>${badge(c.status,{'Applied':'b-green','Disputed':'b-red','Refunded':'b-teal'})}</td>
+      </tr>`).join('') || '<tr><td colspan="9" class="empty">No data</td></tr>';
+    }
+
+    if (name === 'products') {
+      const data = await apiFetch('/api/products');
+      document.getElementById('tbl-products').innerHTML = data.map(p => `<tr>
+        <td>${mono(p.productId)}</td><td><strong>${p.packageName}</strong></td>
+        <td>${p.productType||'—'}</td><td><strong>${fmt(p.basePrice)}</strong></td>
+        <td>${p.currency||'—'}</td><td>${p.billingCycle||'—'}</td>
+        <td>${badge(p.status,{'Active':'b-green','Inactive':'b-amber'})}</td>
+        <td style="font-size:11px;color:var(--t2)">${(p.features||[]).join(', ')}</td>
+      </tr>`).join('') || '<tr><td colspan="8" class="empty">No data</td></tr>';
+    }
+
+    if (name === 'subscriptions') {
+      const data = await apiFetch('/api/customer-products');
+      document.getElementById('tbl-subscriptions').innerHTML = data.map(s => `<tr>
+        <td>${mono(s.customerId)}</td><td><strong>${s.packageName||'—'}</strong></td>
+        <td>${fmtDate(s.startDate)}</td><td><strong>${fmt(s.agreedPrice)}</strong></td>
+        <td>${badge(s.status,{'Active':'b-green','Suspended':'b-amber','Terminated':'b-red'})}</td>
+      </tr>`).join('') || '<tr><td colspan="5" class="empty">No data</td></tr>';
+    }
+
+    if (name === 'usage') {
+      const data = await apiFetch('/api/usage');
+      document.getElementById('tbl-usage').innerHTML = data.map(u => `<tr>
+        <td>${mono(u.usageId)}</td><td>${mono(u.customerId)}</td>
+        <td>${badge(u.usageType,{'Voice':'b-blue','Data':'b-teal','SMS':'b-purple'})}</td>
+        <td><strong>${u.usageAmount}</strong></td><td>${u.unit||'—'}</td>
+        <td>${u.roamingFlag ? '<span class="badge b-red">Yes</span>' : '<span class="badge b-green">No</span>'}</td>
+        <td>${fmtDate(u.usageDate)}</td>
+      </tr>`).join('') || '<tr><td colspan="7" class="empty">No data</td></tr>';
+    }
+
+    if (name === 'complaints') {
+      const data = await apiFetch('/api/complaints');
+      document.getElementById('tbl-complaints').innerHTML = data.map(c => `<tr>
+        <td>${mono(c.complaintId)}</td><td>${mono(c.customerId)}</td>
+        <td>${c.complaintType||'—'}</td>
+        <td style="max-width:240px">${trunc(c.description,80)}</td>
+        <td>${fmtDate(c.complaintDate)}</td><td>${c.channel||'—'}</td>
+        <td>${badge(c.status,{'Open':'b-amber','Under Investigation':'b-blue','Closed':'b-green'})}</td>
+      </tr>`).join('') || '<tr><td colspan="7" class="empty">No complaints yet</td></tr>';
+    }
+
+    if (name === 'investigations') {
+      const data = await apiFetch('/api/investigations');
+      document.getElementById('tbl-investigations').innerHTML = data.map(i => `<tr>
+        <td>${mono(i.investigationId?.slice(-12))}</td>
+        <td>${mono(i.complaintId?.slice(-16))}</td>
+        <td>${mono(i.customerId)}</td>
+        <td style="max-width:200px;font-size:12px">${trunc(i.rootCause,80)}</td>
+        <td style="max-width:200px;font-size:12px">${trunc(i.recommendation,80)}</td>
+        <td>${i.confidenceScore ? '<span class="badge b-blue">'+(i.confidenceScore*100).toFixed(0)+'%</span>' : '—'}</td>
+        <td style="font-size:11px;color:var(--t3)">${i.investigatedBy||'—'}</td>
+      </tr>`).join('') || '<tr><td colspan="7" class="empty">No investigations yet</td></tr>';
+    }
+  } catch(e) {
+    console.error(e);
+    toast('Error loading data — is the server running?');
+  }
+}
+
+async function seedDB() {
+  toast('Seeding database…');
+  const r = await fetch(API + '/api/seed', { method: 'POST' });
+  const d = await r.json();
+  if (d.ok) { toast('✅ Database seeded!'); refreshAll(); }
+  else toast('❌ ' + d.error);
+}
+
+function refreshAll() {
+  const active = document.querySelector('.side-item.active');
+  const name = active?.textContent?.trim().toLowerCase().replace(/ /g,'') || 'dashboard';
+  const map = { dashboard:'dashboard', customers:'customers', invoices:'invoices', charges:'charges', products:'products', subscriptions:'subscriptions', usagerecords:'usage', complaints:'complaints', aiinvestigations:'investigations' };
+  loadSection(map[name] || 'dashboard');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// init
+loadSection('dashboard');
+setInterval(() => { const active = document.querySelector('.section.active'); if(active) loadSection(active.id.replace('section-','')); }, 30000);
+</script>
+</body>
+</html>

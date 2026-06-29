@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selfcare — Billing Support</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F0F2F8; --white: #fff; --border: #DDE1ED;
+  --blue: #2563EB; --blue-d: #1D4ED8; --blue-l: #EFF6FF;
+  --green: #16A34A; --green-l: #F0FDF4;
+  --red: #DC2626; --red-l: #FEF2F2;
+  --amber: #D97706;
+  --t1: #111827; --t2: #4B5563; --t3: #9CA3AF;
+  --font: -apple-system, BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--t1); }
+.page { height: 100vh; max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; background: var(--white); box-shadow: 0 0 60px rgba(0,0,0,.1); }
+
+/* ── header ─────────────────────────────────────────────── */
+header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.hd-av { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg,#2563EB,#7C3AED); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.hd-name   { font-size: 15px; font-weight: 700; }
+.hd-status { font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 5px; }
+.hd-status::before { content:''; width:7px; height:7px; background:var(--green); border-radius:50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.hd-right { margin-left: auto; }
+.care-link { font-size: 12px; color: var(--t3); text-decoration: none; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; }
+.care-link:hover { color: var(--blue); border-color: var(--blue); }
+
+/* ── lookup bar ─────────────────────────────────────────── */
+.lookup-bar {
+  padding: 14px 20px;
+  background: var(--blue-l);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.lookup-label {
+  font-size: 11px; font-weight: 700; color: var(--blue);
+  text-transform: uppercase; letter-spacing: .06em;
+  margin-bottom: 8px;
+}
+.lookup-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lookup-input-wrap {
+  display: flex; align-items: center;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color .15s, box-shadow .15s;
+}
+.lookup-input-wrap:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+}
+.lookup-input-wrap input {
+  border: none; outline: none;
+  padding: 8px 12px;
+  font-size: 14px; font-family: var(--font);
+  width: 220px; color: var(--t1);
+  background: transparent;
+}
+.lookup-input-wrap input::placeholder { color: var(--t3); }
+.lookup-divider { width: 1px; height: 28px; background: var(--border); }
+.lookup-btn {
+  padding: 8px 16px;
+  background: var(--blue); color: #fff;
+  border: none; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background .12s;
+}
+.lookup-btn:hover { background: var(--blue-d); }
+
+.lookup-hint { font-size: 11.5px; color: var(--t2); }
+.lookup-hint strong { color: var(--blue); }
+
+/* demo pills */
+.demo-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.demo-pill {
+  padding: 4px 11px; font-size: 11.5px;
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 20px; cursor: pointer; color: var(--t2);
+  transition: border-color .12s, color .12s;
+}
+.demo-pill:hover { border-color: var(--blue); color: var(--blue); }
+.demo-pill span { font-family: monospace; font-weight: 700; }
+
+/* ── customer card (shown after load) ───────────────────── */
+.cust-banner {
+  display: none;
+  padding: 10px 20px;
+  background: var(--green-l);
+  border-bottom: 1px solid #BBF7D0;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.cust-banner.show { display: flex; }
+.cust-av {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--green); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; flex-shrink: 0;
+}
+.cust-info { flex: 1; }
+.cust-name { font-size: 14px; font-weight: 700; color: var(--t1); }
+.cust-meta { font-size: 11.5px; color: var(--t2); margin-top: 2px; display: flex; gap: 12px; flex-wrap: wrap; }
+.cust-meta span { display: flex; align-items: center; gap: 4px; }
+.cust-meta strong { color: var(--t1); }
+.badge-acc {
+  font-family: monospace; font-size: 13px; font-weight: 700;
+  background: var(--white); border: 1px solid #BBF7D0;
+  color: var(--green); padding: 3px 10px; border-radius: 6px;
+}
+.badge-type {
+  font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 20px;
+}
+.badge-post { background: var(--blue-l); color: var(--blue); }
+.badge-pre  { background: #FEF3C7; color: #92400E; }
+.change-btn {
+  padding: 5px 12px; font-size: 12px;
+  background: var(--white); border: 1px solid #BBF7D0;
+  border-radius: 6px; cursor: pointer; color: var(--t2);
+  margin-left: auto;
+}
+.change-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ── error banner ───────────────────────────────────────── */
+.err-banner {
+  display: none;
+  padding: 10px 20px;
+  background: var(--red-l);
+  border-bottom: 1px solid #FECACA;
+  font-size: 13px; color: var(--red);
+  flex-shrink: 0; align-items: center; gap: 8px;
+}
+.err-banner.show { display: flex; }
+
+/* ── messages ───────────────────────────────────────────── */
+.msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--bg); }
+.msgs::-webkit-scrollbar { width: 4px; }
+.msgs::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.row { display: flex; align-items: flex-end; gap: 8px; }
+.row.user { flex-direction: row-reverse; }
+.av { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.row.agent .av { background: linear-gradient(135deg,#2563EB,#7C3AED); color:#fff; }
+.row.user  .av { background: var(--white); border: 1px solid var(--border); color: var(--t2); }
+.grp { display: flex; flex-direction: column; gap: 2px; max-width: 76%; }
+.row.user .grp { align-items: flex-end; }
+.who { font-size: 10.5px; color: var(--t3); padding: 0 3px 2px; }
+.bubble { padding: 11px 15px; font-size: 14px; line-height: 1.7; border-radius: 18px; word-break: break-word; }
+.row.agent .bubble { background: var(--white); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.row.user  .bubble { background: var(--blue); color: #fff; border-bottom-right-radius: 4px; }
+
+/* result card */
+.result { margin-top: 10px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; font-size: 13px; }
+.result-head { padding: 9px 14px; background: linear-gradient(90deg,#EFF6FF,#F5F3FF); font-size: 11px; font-weight: 700; color: var(--blue); border-bottom: 1px solid var(--border); }
+.result-row { padding: 9px 14px; border-bottom: 1px solid var(--border); line-height: 1.55; }
+.result-row:last-child { border-bottom: none; }
+.rl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--t3); font-weight: 700; margin-bottom: 3px; }
+.rv { color: var(--t1); }
+.conf-bar { height: 5px; background: var(--border); border-radius: 3px; margin-top: 5px; overflow: hidden; }
+.conf-fill { height: 100%; background: linear-gradient(90deg,#2563EB,#7C3AED); border-radius: 3px; transition: width .6s; }
+.saved-tag { display: inline-block; background: var(--green-l); color: var(--green); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-top: 4px; margin-right: 4px; }
+
+/* typing dots */
+.dots { display: flex; gap: 5px; align-items: center; padding: 2px 0; }
+.dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--t3); animation: bounce 1.1s infinite; }
+.dots span:nth-child(2){ animation-delay:.18s; }
+.dots span:nth-child(3){ animation-delay:.36s; }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+/* ── input ──────────────────────────────────────────────── */
+.input-wrap { flex-shrink: 0; padding: 12px 16px 16px; border-top: 1px solid var(--border); background: var(--white); }
+.input-row { display: flex; align-items: flex-end; gap: 10px; background: var(--bg); border: 1.5px solid var(--border); border-radius: 14px; padding: 9px 10px 9px 16px; transition: border-color .15s, box-shadow .15s; }
+.input-row:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.input-row textarea { flex: 1; border: none; background: transparent; font-size: 14px; font-family: var(--font); color: var(--t1); resize: none; outline: none; min-height: 22px; max-height: 120px; line-height: 1.55; }
+.input-row textarea::placeholder { color: var(--t3); }
+.send-btn { width: 36px; height: 36px; border-radius: 10px; background: var(--blue); border: none; color: #fff; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: background .12s, transform .1s; }
+.send-btn:hover { background: var(--blue-d); }
+.send-btn:active { transform: scale(.95); }
+.send-btn:disabled { opacity: .5; cursor: not-allowed; }
+.hint { text-align: center; font-size: 11px; color: var(--t3); margin-top: 7px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- header -->
+  <header>
+    <div class="hd-av">🤖</div>
+    <div>
+      <div class="hd-name">Billing Support Agent</div>
+      <div class="hd-status">Online · AI-powered · Connected to live DB</div>
+    </div>
+    <div class="hd-right">
+      <a href="/care" class="care-link">← Care Portal</a>
+    </div>
+  </header>
+
+  <!-- lookup bar -->
+  <div class="lookup-bar">
+    <div class="lookup-label">Identify your account</div>
+    <div class="lookup-row">
+      <div class="lookup-input-wrap">
+        <input type="text" id="lookup-inp"
+          placeholder="Account number or phone"
+          onkeydown="if(event.key==='Enter') loadCust()" />
+        <div class="lookup-divider"></div>
+        <button class="lookup-btn" onclick="loadCust()">Find Account →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- error banner -->
+  <div class="err-banner" id="err-banner">
+    <span>⚠️</span>
+    <span id="err-msg"></span>
+  </div>
+
+  <!-- customer banner (shown after successful load) -->
+  <div class="cust-banner" id="cust-banner">
+    <div class="cust-av" id="cust-initials"></div>
+    <div class="cust-info">
+      <div class="cust-name" id="cust-name"></div>
+      <div class="cust-meta">
+        <span>Account: <strong id="cust-acc"></strong></span>
+        <span>Phone: <strong id="cust-phone"></strong></span>
+        <span>Plan: <strong id="cust-plan"></strong></span>
+        <span>Since: <strong id="cust-since"></strong></span>
+      </div>
+    </div>
+    <span class="badge-type" id="cust-type-badge"></span>
+    <button class="change-btn" onclick="changeAccount()">Change account</button>
+  </div>
+
+  <!-- messages -->
+  <div class="msgs" id="msgs"></div>
+
+  <!-- input -->
+  <div class="input-wrap">
+    <div class="input-row">
+      <textarea id="inp" rows="1" placeholder="Describe your billing issue…"
+        onkeydown="onKey(event)" oninput="grow(this)"></textarea>
+      <button class="send-btn" id="sendbtn" onclick="send()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+    <div class="hint">Enter to send · Shift+Enter for new line</div>
+  </div>
+</div>
+
+<script>
+let currentCustomer = null;
+let chatHistory     = [];
+let busy            = false;
+
+// ── input helpers ───────────────────────────────────────────
+function grow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+// ── show / hide error banner ────────────────────────────────
+function showErr(msg) {
+  document.getElementById('err-msg').textContent = msg;
+  document.getElementById('err-banner').classList.add('show');
+  setTimeout(() => document.getElementById('err-banner').classList.remove('show'), 4000);
+}
+
+// ── load customer ───────────────────────────────────────────
+function quickLoad(val) {
+  document.getElementById('lookup-inp').value = val;
+  loadCust();
+}
+
+function changeAccount() {
+  document.getElementById('cust-banner').classList.remove('show');
+  currentCustomer = null;
+  chatHistory = [];
+  document.getElementById('lookup-inp').value = '';
+  document.getElementById('lookup-inp').focus();
+  clearMsgs();
+  agentMsg('Hi there 👋 Please enter your account number or phone number above to load a different account.');
+}
+
+async function loadCust() {
+  const raw = document.getElementById('lookup-inp').value.trim();
+  if (!raw) { showErr('Please enter an account number or phone number.'); return; }
+
+  try {
+    // Test connectivity first
+    const ping = await fetch('/api/ping').catch(() => null);
+    if (!ping || !ping.ok) {
+      showErr('Cannot reach server. Open http://localhost:3001/selfcare in your browser — do not open the HTML file directly.');
+      return;
+    }
+
+    const res = await fetch('/api/customers');
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const customers = await res.json();
+
+    // Match by account number (exact) OR phone number (contains or exact)
+    const cust = customers.find(c =>
+      c.customerId === raw ||
+      c.phoneNumber === raw ||
+      c.phoneNumber?.replace(/\s/g, '') === raw.replace(/\s/g, '') ||
+      // also allow lookup without country code e.g. 0501234567 matching +966501234567
+      c.phoneNumber?.endsWith(raw.replace(/^0/, ''))
+    );
+
+    if (!cust) {
+      showErr(`No account found for "${raw}". Check the account number or phone number and try again.`);
+      return;
+    }
+
+    currentCustomer = cust;
+    chatHistory = [];
+
+    // Populate customer banner
+    const initials = cust.firstName[0] + cust.lastName[0];
+    document.getElementById('cust-initials').textContent = initials;
+    document.getElementById('cust-name').textContent     = `${cust.firstName} ${cust.lastName}`;
+    document.getElementById('cust-acc').textContent      = cust.customerId;
+    document.getElementById('cust-phone').textContent    = cust.phoneNumber;
+    document.getElementById('cust-plan').textContent     = cust.planName;
+    document.getElementById('cust-since').textContent    = new Date(cust.registrationDate).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'numeric' });
+
+    const typeBadge = document.getElementById('cust-type-badge');
+    typeBadge.textContent = cust.accountType;
+    typeBadge.className   = `badge-type ${cust.accountType === 'Postpaid' ? 'badge-post' : 'badge-pre'}`;
+
+    document.getElementById('cust-banner').classList.add('show');
+    document.getElementById('err-banner').classList.remove('show');
+
+    // Clear chat and greet
+    clearMsgs();
+    agentMsg(
+      `Account verified ✓ Welcome, <strong>${cust.firstName} ${cust.lastName}</strong>!<br><br>` +
+      `I can see your <strong>${cust.planName}</strong> account (${cust.accountType}), ` +
+      `active since ${new Date(cust.registrationDate).toLocaleDateString('en-GB', {year:'numeric',month:'long'})}.<br><br>` +
+      `Please describe your billing issue and I'll investigate it right away.`
+    );
+    chatHistory.push({ role: 'assistant', content: `Welcome ${cust.firstName}! Please describe your billing issue.` });
+
+  } catch(e) {
+    showErr(`Error: ${e.message}. Make sure you opened http://localhost:3001/selfcare (not the file directly).`);
+  }
+}
+
+// ── send complaint ──────────────────────────────────────────
+async function send() {
+  if (busy) return;
+  const inp  = document.getElementById('inp');
+  const text = inp.value.trim();
+  if (!text) return;
+
+  if (!currentCustomer) {
+    showErr('Please load your account first using the lookup bar above.');
+    return;
+  }
+
+  inp.value = ''; inp.style.height = 'auto';
+  userMsg(text);
+  chatHistory.push({ role: 'user', content: text });
+
+  busy = true;
+  document.getElementById('sendbtn').disabled = true;
+  const tid = typingMsg();
+
+  try {
+    const res = await fetch('/api/complaint', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        customerId:  currentCustomer.customerId,
+        description: text,
+        channel:     'Selfcare',
+      }),
+    });
+
+    const data = await res.json();
+    removeTyping(tid);
+
+    if (data.error) throw new Error(data.error);
+
+    const inv = data.investigation;
+    const pct = Math.round((inv.confidenceScore || 0) * 100);
+
+    const html =
+      `I've investigated your account. Here's what I found:<br><br>` +
+      `<em>${inv.aiSummary}</em>` +
+      `<div class="result">` +
+        `<div class="result-head">📋 Investigation Result — saved to database</div>` +
+        `<div class="result-row"><div class="rl">Root Cause</div><div class="rv">${inv.rootCause}</div></div>` +
+        `<div class="result-row"><div class="rl">Recommendation</div><div class="rv">${inv.recommendation}</div></div>` +
+        `<div class="result-row"><div class="rl">Next Action</div><div class="rv">${inv.nextAction}</div></div>` +
+        `<div class="result-row">` +
+          `<div class="rl">AI Confidence</div>` +
+          `<div class="rv">${pct}%` +
+            `<div class="conf-bar"><div class="conf-fill" style="width:${pct}%"></div></div>` +
+          `</div>` +
+        `</div>` +
+        `<div class="result-row">` +
+          `<div class="rl">Records saved</div>` +
+          `<div class="rv">` +
+            `<span class="saved-tag">✓ Complaint ${data.complaint.complaintId}</span>` +
+            `<span class="saved-tag">✓ Investigation ${inv.investigationId}</span>` +
+          `</div>` +
+        `</div>` +
+      `</div>`;
+
+    agentMsg(html);
+    chatHistory.push({ role: 'assistant', content: inv.aiSummary + ' ' + inv.recommendation });
+
+  } catch(e) {
+    removeTyping(tid);
+    agentMsg(`Something went wrong: ${e.message}. Please try again.`);
+  } finally {
+    busy = false;
+    document.getElementById('sendbtn').disabled = false;
+    document.getElementById('inp').focus();
+  }
+}
+
+// ── DOM helpers ─────────────────────────────────────────────
+function agentMsg(html) {
+  const row = document.createElement('div');
+  row.className = 'row agent';
+  row.innerHTML = `<div class="av">AI</div><div class="grp"><div class="who">Billing Agent</div><div class="bubble">${html}</div></div>`;
+  append(row);
+}
+
+function userMsg(text) {
+  const initials = currentCustomer ? currentCustomer.firstName[0] + currentCustomer.lastName[0] : 'Me';
+  const name     = currentCustomer ? `${currentCustomer.firstName} ${currentCustomer.lastName}` : 'You';
+  const row = document.createElement('div');
+  row.className = 'row user';
+  row.innerHTML = `<div class="av">${initials}</div><div class="grp"><div class="who">${name}</div><div class="bubble">${esc(text)}</div></div>`;
+  append(row);
+}
+
+function typingMsg() {
+  const id  = 'ty' + Date.now();
+  const row = document.createElement('div');
+  row.id = id; row.className = 'row agent';
+  row.innerHTML = `<div class="av">AI</div><div class="grp"><div class="who">Billing Agent</div><div class="bubble"><div class="dots"><span></span><span></span><span></span></div></div></div>`;
+  append(row);
+  return id;
+}
+
+function removeTyping(id) { const el = document.getElementById(id); if (el) el.remove(); }
+function clearMsgs()      { document.getElementById('msgs').innerHTML = ''; }
+function append(el)       { const m = document.getElementById('msgs'); m.appendChild(el); m.scrollTop = m.scrollHeight; }
+function esc(s)           { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── init greeting ───────────────────────────────────────────
+agentMsg(
+  'Hi there 👋 I\'m your billing support agent.<br><br>' +
+  'Please enter your <strong>account number</strong> or <strong>phone number</strong> above to get started.'
+);
+</script>
+</body>
+</html>
